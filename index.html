@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>نيوكتاون - آل دخيل الله</title>
+    <script src="https://unpkg.com/trystero@0.16.1/dist/trystero-torrent.min.js"></script>
+    <style>
+        body { margin: 0; background: #1a1a1a; color: white; font-family: sans-serif; overflow: hidden; touch-action: none; }
+        #lobby { position: absolute; inset: 0; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
+        .btn { background: #d4af37; color: black; border: none; padding: 15px 30px; font-size: 1.2rem; font-weight: bold; cursor: pointer; border-radius: 5px; margin: 10px; width: 200px; }
+        #game-ui { position: absolute; top: 10px; left: 10px; z-index: 10; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; }
+        #map { width: 1500px; height: 1500px; background: #222; position: relative; background-image: repeating-linear-gradient(#333 0 1px, transparent 1px 50px), repeating-linear-gradient(90deg, #333 0 1px, transparent 1px 50px); }
+        .player { position: absolute; width: 40px; height: 40px; background: #2ecc71; border-radius: 50%; border: 3px solid #fff; z-index: 5; }
+        .player.enemy { background: #e74c3c; }
+        .bullet { position: absolute; width: 6px; height: 6px; background: #f1c40f; border-radius: 50%; }
+        #controls { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: space-around; pointer-events: none; }
+        .joystick, .fire-btn { width: 90px; height: 90px; background: rgba(255,255,255,0.2); border-radius: 50%; pointer-events: auto; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .fire-btn { background: rgba(231, 76, 60, 0.6); border: 2px solid #fff; }
+        #win-screen { position: absolute; inset: 0; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 200; color: #d4af37; font-size: 3rem; }
+    </style>
+</head>
+<body>
+
+<div id="lobby">
+    <h1>COD: آل دخيل الله</h1>
+    <p>معرفك (ID): <span id="my-id" style="color: #d4af37; font-size: 1.5rem;">----</span></p>
+    <div style="margin-bottom: 20px;">الفوز من: 20 قتلة | الوقت: ∞</div>
+    <button class="btn" onclick="startGame('Assault')">رشاش (M4)</button>
+    <button class="btn" onclick="startGame('Sniper')">سنايبر (DL Q33)</button>
+</div>
+
+<div id="win-screen">
+    <div id="winner-text">فاز اللاعب!</div>
+    <button class="btn" onclick="location.reload()">لعب مرة أخرى</button>
+</div>
+
+<div id="game-ui">
+    <div>القتلات: <span id="kills">0</span> / 20</div>
+    <div id="weapon-info">السلاح: -</div>
+</div>
+
+<div id="viewport" style="width: 100vw; height: 100vh; overflow: hidden; display: none;">
+    <div id="map"></div>
+</div>
+
+<div id="controls" style="display: none;">
+    <div id="move-pad" class="joystick">تحريك</div>
+    <div id="fire-btn" class="fire-btn">إطلاق</div>
+</div>
+
+<script>
+    const myID = Math.floor(1000 + Math.random() * 9000).toString();
+    document.getElementById('my-id').innerText = myID;
+
+    let kills = 0;
+    let currentWeapon = 'Assault';
+    const config = {appId: 'wessam-nuketown-final'};
+    const room = Trystero.joinRoom(config, 'lobby1');
+    const [sendMove, getMove] = room.makeAction('move');
+    const [sendShoot, getShoot] = room.makeAction('shoot');
+    const [sendWin, getWin] = room.makeAction('win');
+
+    // أصوات الأسلحة
+    const sounds = {
+        Assault: new Audio('https://actions.google.com/sounds/v1/weapons/automatic_fire.ogg'),
+        Sniper: new Audio('https://actions.google.com/sounds/v1/weapons/single_shot_percussion.ogg')
+    };
+
+    function startGame(weapon) {
+        currentWeapon = weapon;
+        document.getElementById('lobby').style.display = 'none';
+        document.getElementById('viewport').style.display = 'block';
+        document.getElementById('controls').style.display = 'flex';
+        document.getElementById('weapon-info').innerText = "السلاح: " + (weapon === 'Assault' ? 'M4' : 'Sniper');
+
+        // منطق إطلاق النار والصوت
+        document.getElementById('fire-btn').addEventListener('touchstart', () => {
+            sounds[currentWeapon].currentTime = 0;
+            sounds[currentWeapon].play();
+            // هنا يوضع منطق الإصابة (Hitbox)
+            checkKill();
+        });
+    }
+
+    function checkKill() {
+        // محاكاة زيادة القتلات للتجربة
+        kills++;
+        document.getElementById('kills').innerText = kills;
+        if (kills >= 20) {
+            sendWin({winner: myID});
+            showWinScreen("مبروك! أنت الفائز");
+        }
+    }
+
+    getWin((data) => {
+        showWinScreen("فاز اللاعب رقم: " + data.winner);
+    });
+
+    function showWinScreen(text) {
+        document.getElementById('win-screen').style.display = 'flex';
+        document.getElementById('winner-text').innerText = text;
+    }
+
+    // ملاحظة: لتحريك اللاعب بشكل كامل في الماب نحتاج لإضافة Joystick Logic
+</script>
+</body>
+</html>
