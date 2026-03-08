@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>COD: آل دخيل الله - منظور الشخص الأول</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+        #hud { position: absolute; bottom: 20px; left: 20px; color: white; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 10px; border-left: 5px solid #d4af37; }
+        #controls { position: absolute; bottom: 30px; right: 20px; display: flex; gap: 10px; }
+        .btn { width: 70px; height: 70px; border-radius: 50%; border: 3px solid #fff; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; cursor: pointer; user-select: none; }
+        #shoot-btn { background: rgba(255,0,0,0.6); }
+        #dance-btn { background: rgba(155, 89, 182, 0.6); }
+    </style>
+</head>
+<body>
+
+    <div id="crosshair"></div>
+    <div id="hud">
+        <div style="font-size: 1.5rem;">COD: آل دخيل الله</div>
+        <div>السلاح: M4 النسخة الذهبية</div>
+        <div>القتلات: 0/20</div>
+    </div>
+
+    <div id="controls">
+        <div id="dance-btn" class="btn">رقصة 🎵</div>
+        <div id="shoot-btn" class="btn">إطلاق 🔥</div>
+    </div>
+
+    <script>
+        // 1. إعداد العالم (Scene)
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87ceeb); // سماء زرقاء
+        scene.fog = new THREE.Fog(0x87ceeb, 0, 100);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. الماب (أرضية نيوكتاون)
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshPhongMaterial({ color: 0x555555 }));
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+
+        // إضافة إضاءة
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(5, 10, 5);
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0x404040));
+
+        // 3. السلاح (كأنك ماسكه)
+        const weaponGroup = new THREE.Group();
+        const gunBody = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.5), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+        const gunHandle = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.2, 0.1), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+        gunHandle.position.y = -0.1;
+        weaponGroup.add(gunBody, gunHandle);
+        weaponGroup.position.set(0.3, -0.3, -0.5);
+        camera.add(weaponGroup);
+        scene.add(camera);
+
+        // 4. نظام الحركة (المشي)
+        camera.position.y = 1.6; // طول اللاعب
+        let moveForward = false;
+        document.addEventListener('touchstart', () => moveForward = true);
+        document.addEventListener('touchend', () => moveForward = false);
+
+        // 5. الموسيقى والرقص
+        const danceMusic = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
+        document.getElementById('dance-btn').onclick = () => {
+            danceMusic.play();
+            // حركة رقص الكاميرا
+            let startTime = Date.now();
+            const danceLoop = () => {
+                let elapsed = Date.now() - startTime;
+                camera.rotation.z = Math.sin(elapsed * 0.01) * 0.1;
+                if(elapsed < 3000) requestAnimationFrame(danceLoop);
+                else { camera.rotation.z = 0; danceMusic.pause(); }
+            };
+            danceLoop();
+        };
+
+        // إطلاق النار
+        document.getElementById('shoot-btn').onclick = () => {
+            weaponGroup.position.z += 0.05; // الارتداد
+            setTimeout(() => weaponGroup.position.z -= 0.05, 50);
+        };
+
+        // 6. تشغيل اللعبة
+        function animate() {
+            requestAnimationFrame(animate);
+            if(moveForward) camera.translateZ(-0.1);
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // تدوير الكاميرا باللمس (كأنك تلف وجهك)
+        let touchX;
+        document.addEventListener('touchmove', (e) => {
+            let deltaX = e.touches[0].clientX - touchX;
+            camera.rotation.y -= deltaX * 0.005;
+            touchX = e.touches[0].clientX;
+        });
+        document.addEventListener('touchstart', (e) => touchX = e.touches[0].clientX);
+
+    </script>
+</body>
+</html>
